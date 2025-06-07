@@ -11,23 +11,26 @@ class KM:
         """
 
         self.k = k
-        self.means = np.empty((0, 0))
+        self.dimensions = 0
         self.centroids = np.empty(k)
-        self.clusters = np.empty(k)
-        self.dataset = np.empty((0, 0))
 
     
-    def get_closest(self, cluster: npt.NDArray[np.floating], cv: npt.NDArray[np.floating]) -> int:
+    def _get_closest(self, cv: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating] | None = None) -> int:
         """
-        Gets the new centroid of a cluster.
+        Classifies a vector.
 
         Args:
-            cluster: 2-dimensional numpy array contianing all vectors in the cluster.
-            cv: comparison vector
+            cluster: If called within the object, 2-dimensional numpy array contianing all vectors in the cluster.
+                If called by the user, it's set to self.centroids for _get_closestionof the data.
+            cv: Classification vector, the vector that is being classified.
 
         Returns:
-            The index of the vector in the cluster closest to the comparison vector
+            The index of the vector in the cluster closest to the comparison vector. This is the same as the label.
         """
+
+        # This is what happens if the user uses the _get_closest method
+        if (cluster is None):
+            cluster = self.centroids
 
         # np.linalg.norm(v1 - v2) returns the distance between v1 and v2
         centroid_dist = (0, np.linalg.norm(cluster[0] - cv)) 
@@ -37,27 +40,51 @@ class KM:
             if (dist < centroid_dist[1]):
                 centroid_dist = (v, dist)
 
-        # Only return the vector, the distance isn't required
+        # Only return the index, the distance isn't required
         return centroid_dist[0]
 
 
-    def get_clusters(self) -> None:
+    def _get_clusters(self, dataset: npt.NDArray[np.floating]) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.floating]]:
         """
         Generates clusters based on centroids and calculates their means.
+
+        Args:
+            dataset: an numpy array containing the training data
+
+        Returns:
+            The clusters that were found along with the means that were calculated.
         """
 
-        sums = np.empty((self.k, 0))
+        sums = np.empty((self.k, self.dimensions))
+        means = np.empty((self.k, self.dimensions))
 
-        self.clusters = np.array([np.empty((0, 0)) for _ in range(self.k)])
+        clusters = [[] for _ in range(self.k)]
 
-        for v in self.dataset:
-            index = self.get_closest(self.centroids, v)
+        for v in dataset:
+            index = self._get_closest(v, self.centroids)
 
-            self.clusters[index] = np.append(self.clusters[index], v)
+            clusters[index].append(v)
             sums[index] += v
 
         for i in range(len(sums)):
-            self.means[i] = sums[i]/len(self.clusters[i])
+            means[i] = sums[i]/len(clusters[i])
+
+        return (np.array(clusters), means)
+
+
+    def _calc_centroids(self, clusters: npt.NDArray[np.floating], means: npt.NDArray[np.floating]) -> None:
+        """
+        Calculates centroids for each cluster from means.
+
+        Args:
+            clusters: 2-dimensional numpy array of clusters
+
+        Returns:
+            Nothing, centroids are stored in the object.
+        """
+
+        for i in range(len(means)):
+            self.centroids[i] = clusters[i][self._get_closest(means[i], clusters[i])]
 
 
     def train(self, dataset: npt.NDArray[np.floating]) -> None:
@@ -67,3 +94,34 @@ class KM:
         Args:
             dataset: a 2-dimensional numpy array storing all vectors that the model will be trained on.
         """
+
+        self.dimensions = dataset.shape[1]
+        self.centroids = np.array([dataset[i] for i in range(self.k)])
+
+        clusters, means = self._get_clusters(dataset)
+        print(clusters)
+        self._calc_centroids(clusters, means)
+        print(self.centroids)
+
+
+    def predict(self, featureset: npt.NDArray[np.floating]) -> npt.NDArray:
+        """
+        Classifies all vectors in the featureset.
+        UNFINISHED
+
+        Args:
+            featureset: set of unclassified data
+
+        Returns:
+            An array of labels.
+        """
+
+        labels = np.empty(len(featureset))
+
+        return labels
+
+
+if (__name__ == "__main__"):
+    model = KM(2)
+
+    model.train(np.array([np.array([1, 1]), np.array([-1, -1]), np.array([-2, -2]), np.array([-3, -3]), np.array([2, 2]), np.array([3, 3])]))
