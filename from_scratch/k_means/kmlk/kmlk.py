@@ -44,7 +44,7 @@ class KM:
         return centroid_dist[0]
 
 
-    def _get_clusters(self, dataset: npt.NDArray[np.floating]) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.floating]]:
+    def _get_clusters(self, dataset: npt.NDArray[np.floating]) -> tuple[list, npt.NDArray[np.floating]]:
         """
         Generates clusters based on centroids and calculates their means.
 
@@ -69,10 +69,11 @@ class KM:
         for i in range(len(sums)):
             means[i] = sums[i]/len(clusters[i])
 
-        return (np.array(clusters), means)
+        print(clusters)
+        return (clusters, means)
 
 
-    def _calc_centroids(self, clusters: npt.NDArray[np.floating], means: npt.NDArray[np.floating]) -> None:
+    def _calc_centroids(self, clusters: list, means: npt.NDArray[np.floating]) -> None:
         """
         Calculates centroids for each cluster from means.
 
@@ -147,4 +148,4 @@ class KM:
 if (__name__ == "__main__"):
     model = KM(2)
 
-    model.train(np.array([np.array([1, 1]), np.array([-1, -1]), np.array([-2, -2]), np.array([-3, -3]), np.array([2, 2]), np.array([3, 3])]))
+    model.train(np.array([np.array([1, 1]), np.array([2, 2]), np.array([-2, -2]), np.array([-3, -3]), np.array([-1, -1]), np.array([3, 3])]))
