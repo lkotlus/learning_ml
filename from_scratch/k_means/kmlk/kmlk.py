@@ -55,7 +55,7 @@ class KM:
             The clusters that were found along with the means that were calculated.
         """
 
-        sums = np.empty((self.k, self.dimensions))
+        sums = np.zeros((self.k, self.dimensions))
         means = np.empty((self.k, self.dimensions))
 
         clusters = [[] for _ in range(self.k)]
@@ -86,10 +86,29 @@ class KM:
         for i in range(len(means)):
             self.centroids[i] = clusters[i][self._get_closest(means[i], clusters[i])]
 
+    def _compare_means(self, old: npt.NDArray[np.floating], new: npt.NDArray[np.floating]) -> bool:
+        """
+        Determines if the means have stabilized.
+
+        Args:
+            old: old means array
+            new: new means array
+
+        Returns:
+            True if there have been no changes, False if there have been changes.
+        """
+
+        for i in range(len(old)):
+            for j in range(len(old[i])):
+                if (old[i][j] != new[i][j]):
+                    return False
+
+        return True
+
 
     def train(self, dataset: npt.NDArray[np.floating]) -> None:
         """
-        Goes through the entire training process
+        Goes through the entire training process. By the end, all that is required is to keep the given centroids.
 
         Args:
             dataset: a 2-dimensional numpy array storing all vectors that the model will be trained on.
@@ -99,9 +118,13 @@ class KM:
         self.centroids = np.array([dataset[i] for i in range(self.k)])
 
         clusters, means = self._get_clusters(dataset)
-        print(clusters)
-        self._calc_centroids(clusters, means)
-        print(self.centroids)
+        old_means = np.empty(means.shape)
+
+        while(not self._compare_means(old_means, means)):
+            self._calc_centroids(clusters, means)
+
+            old_means = means
+            clusters, means = self._get_clusters(dataset)
 
 
     def predict(self, featureset: npt.NDArray[np.floating]) -> npt.NDArray:
