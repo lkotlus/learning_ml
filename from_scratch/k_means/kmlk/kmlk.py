@@ -1,6 +1,8 @@
 import numpy as np
 import numpy.typing as npt
 
+from random import sample
+
 class KM:
     def __init__(self, k: int) -> None:
         """
@@ -64,7 +66,6 @@ class KM:
         for i in range(len(sums)):
             means[i] = sums[i]/len(clusters[i])
 
-        print(clusters)
         return (clusters, means)
 
 
@@ -111,7 +112,7 @@ class KM:
         """
 
         self.dimensions = dataset.shape[1]
-        self.centroids = np.array([dataset[i] for i in range(self.k)])
+        self.centroids = np.array([dataset[i] for i in sample(range(len(dataset)), self.k)])
 
         clusters, means = self._get_clusters(dataset)
         old_means = np.empty(means.shape)
