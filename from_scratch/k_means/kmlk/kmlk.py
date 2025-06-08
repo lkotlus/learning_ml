@@ -28,17 +28,74 @@ class KM:
         Returns:
             The index of the vector in the cluster closest to the comparison vector. This is the same as the label.
         """
+        
+        # Small failsafe required
+        if (len(cluster) == 0):
+            cluster = np.array(cv)
 
         # np.linalg.norm(v1 - v2) returns the distance between v1 and v2
-        centroid_dist = (0, np.linalg.norm(cluster[0] - cv)) 
+        vect_dist = (0, np.linalg.norm(cluster[0] - cv)) 
 
         for v in range(len(cluster)):
             dist = np.linalg.norm(cluster[v] - cv)  
-            if (dist < centroid_dist[1]):
-                centroid_dist = (v, dist)
+            if (dist < vect_dist[1]):
+                vect_dist = (v, dist)
 
         # Only return the index, the distance isn't required
-        return centroid_dist[0]
+        return vect_dist[0]
+    
+
+    def _get_farthest_avg(self, c_cluster: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating]) -> int:
+        """
+        Finds the vector with the greatest mean distance from vectors in c_cluster.
+
+        Args:
+            cluster: 2-dimensional numpy array contianing all vectors in the cluster
+            c_cluster: Comparison cluster
+
+        Returns:
+            The index of the vector in the cluster farthest from the comparison cluster average.
+        """
+
+        clen = len(c_cluster)
+
+        # np.linalg.norm(v1 - v2) returns the distance between v1 and v2
+        dist = 0
+        for cv in c_cluster:
+            dist += np.linalg.norm(cluster[0] - cv)
+
+        vect_dist = (0, dist/clen) 
+
+        for v in range(len(cluster)):
+            dist = 0
+            for cv in c_cluster:
+                dist += np.linalg.norm(cluster[v] - cv)
+            dist /= clen
+
+            if (dist > vect_dist[1]):
+                vect_dist = (v, dist)
+
+        # Only return the index, the distance isn't required
+        return vect_dist[0]
+    
+
+    def _initial_guess(self, dataset: npt.NDArray[np.floating]) -> None:
+        """
+        Sets the initial centroid guesses
+        
+        Args:
+            dataset: the dataset that the model will be trained on
+        """
+        
+        centroids = []
+        avg_vects = np.array(np.zeros(self.dimensions))
+        
+        for i in range(self.k):
+            centroids.append(dataset[self._get_farthest_avg(avg_vects, dataset)])
+            
+            avg_vects = np.array(centroids)
+
+        self.centroids = np.array(centroids)
 
 
     def _get_clusters(self, dataset: npt.NDArray[np.floating]) -> tuple[list, npt.NDArray[np.floating]]:
@@ -112,7 +169,7 @@ class KM:
         """
 
         self.dimensions = dataset.shape[1]
-        self.centroids = np.array([dataset[i] for i in sample(range(len(dataset)), self.k)])
+        self._initial_guess(dataset)
 
         clusters, means = self._get_clusters(dataset)
         old_means = np.empty(means.shape)
