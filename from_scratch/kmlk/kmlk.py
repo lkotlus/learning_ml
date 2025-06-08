@@ -1,8 +1,6 @@
 import numpy as np
 import numpy.typing as npt
 
-from random import sample
-
 class KM:
     def __init__(self, k: int) -> None:
         """
