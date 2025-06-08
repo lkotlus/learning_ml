@@ -15,22 +15,17 @@ class KM:
         self.centroids = np.empty(k)
 
     
-    def _get_closest(self, cv: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating] | None = None) -> int:
+    def _get_closest(self, cv: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating]) -> int:
         """
-        Classifies a vector.
+        Finds vector in a cluster closest to the comparison vector
 
         Args:
-            cluster: If called within the object, 2-dimensional numpy array contianing all vectors in the cluster.
-                If called by the user, it's set to self.centroids for _get_closestionof the data.
-            cv: Classification vector, the vector that is being classified.
+            cluster: 2-dimensional numpy array contianing all vectors in the cluster
+            cv: Comparison vector
 
         Returns:
             The index of the vector in the cluster closest to the comparison vector. This is the same as the label.
         """
-
-        # This is what happens if the user uses the _get_closest method
-        if (cluster is None):
-            cluster = self.centroids
 
         # np.linalg.norm(v1 - v2) returns the distance between v1 and v2
         centroid_dist = (0, np.linalg.norm(cluster[0] - cv)) 
@@ -131,7 +126,6 @@ class KM:
     def predict(self, featureset: npt.NDArray[np.floating]) -> npt.NDArray:
         """
         Classifies all vectors in the featureset.
-        UNFINISHED
 
         Args:
             featureset: set of unclassified data
@@ -142,10 +136,7 @@ class KM:
 
         labels = np.empty(len(featureset))
 
+        for X in range(len(featureset)):
+            labels[X] = self._get_closest(featureset[X], self.centroids)
+
         return labels
-
-
-if (__name__ == "__main__"):
-    model = KM(2)
-
-    model.train(np.array([np.array([1, 1]), np.array([2, 2]), np.array([-2, -2]), np.array([-3, -3]), np.array([-1, -1]), np.array([3, 3])]))
