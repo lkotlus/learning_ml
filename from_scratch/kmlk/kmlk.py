@@ -12,10 +12,10 @@ class KM:
 
         self.k = k
         self.dimensions = 0
-        self.centroids = np.empty(k)
+        self.centroids = np.empty((k, self.dimensions))
 
     
-    def _get_closest(self, cv: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating]) -> int:
+    def _get_closest(self, cv: npt.NDArray[np.float64], cluster: npt.NDArray[np.float64]) -> int:
         """
         Finds vector in a cluster closest to the comparison vector
 
@@ -26,10 +26,6 @@ class KM:
         Returns:
             The index of the vector in the cluster closest to the comparison vector. This is the same as the label.
         """
-        
-        # Small failsafe required
-        if (len(cluster) == 0):
-            cluster = np.array(cv)
 
         # np.linalg.norm(v1 - v2) returns the distance between v1 and v2
         vect_dist = (0, np.linalg.norm(cluster[0] - cv)) 
@@ -43,7 +39,7 @@ class KM:
         return vect_dist[0]
     
 
-    def _get_farthest_avg(self, c_cluster: npt.NDArray[np.floating], cluster: npt.NDArray[np.floating]) -> int:
+    def _get_farthest_avg(self, c_cluster: npt.NDArray[np.float64], cluster: npt.NDArray[np.float64]) -> int:
         """
         Finds the vector with the greatest mean distance from vectors in c_cluster.
 
@@ -77,7 +73,7 @@ class KM:
         return vect_dist[0]
     
 
-    def _initial_guess(self, dataset: npt.NDArray[np.floating]) -> None:
+    def _initial_guess(self, dataset: npt.NDArray[np.float64]) -> None:
         """
         Sets the initial centroid guesses
         
@@ -86,17 +82,16 @@ class KM:
         """
         
         centroids = []
-        avg_vects = np.array(np.zeros(self.dimensions))
+        avg_vects = np.array([np.zeros(self.dimensions)])
         
-        for i in range(self.k):
+        for _ in range(self.k):
             centroids.append(dataset[self._get_farthest_avg(avg_vects, dataset)])
-            
             avg_vects = np.array(centroids)
 
         self.centroids = np.array(centroids)
 
 
-    def _get_clusters(self, dataset: npt.NDArray[np.floating]) -> tuple[list, npt.NDArray[np.floating]]:
+    def _get_clusters(self, dataset: npt.NDArray[np.float64]) -> tuple[list, npt.NDArray[np.float64]]:
         """
         Generates clusters based on centroids and calculates their means.
 
@@ -110,7 +105,7 @@ class KM:
         sums = np.zeros((self.k, self.dimensions))
         means = np.empty((self.k, self.dimensions))
 
-        clusters = [[] for _ in range(self.k)]
+        clusters = [[self.centroids[i]] for i in range(self.k)]
 
         for v in dataset:
             index = self._get_closest(v, self.centroids)
@@ -124,7 +119,7 @@ class KM:
         return (clusters, means)
 
 
-    def _calc_centroids(self, clusters: list, means: npt.NDArray[np.floating]) -> None:
+    def _calc_centroids(self, clusters: list[npt.NDArray[np.float64]], means: npt.NDArray[np.float64]) -> None:
         """
         Calculates centroids for each cluster from means.
 
@@ -138,7 +133,7 @@ class KM:
         for i in range(len(means)):
             self.centroids[i] = clusters[i][self._get_closest(means[i], clusters[i])]
 
-    def _compare_means(self, old: npt.NDArray[np.floating], new: npt.NDArray[np.floating]) -> bool:
+    def _compare_means(self, old: npt.NDArray[np.float64], new: npt.NDArray[np.float64]) -> bool:
         """
         Determines if the means have stabilized.
 
@@ -150,15 +145,10 @@ class KM:
             True if there have been no changes, False if there have been changes.
         """
 
-        for i in range(len(old)):
-            for j in range(len(old[i])):
-                if (old[i][j] != new[i][j]):
-                    return False
+        return np.allclose(old, new)
+    
 
-        return True
-
-
-    def train(self, dataset: npt.NDArray[np.floating]) -> None:
+    def train(self, dataset: npt.NDArray[np.float64]) -> None:
         """
         Goes through the entire training process. By the end, all that is required is to keep the given centroids.
 
@@ -179,7 +169,7 @@ class KM:
             clusters, means = self._get_clusters(dataset)
 
 
-    def predict(self, featureset: npt.NDArray[np.floating]) -> npt.NDArray:
+    def predict(self, featureset: npt.NDArray[np.float64]) -> npt.NDArray:
         """
         Classifies all vectors in the featureset.
 
@@ -190,7 +180,7 @@ class KM:
             An array of labels.
         """
 
-        labels = np.empty(len(featureset))
+        labels = np.empty(len(featureset), dtype=int)
 
         for X in range(len(featureset)):
             labels[X] = self._get_closest(featureset[X], self.centroids)
